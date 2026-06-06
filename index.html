@@ -583,7 +583,7 @@
 
     window.onload = function () {
       const today = new Date();
-      const plus30 = addDays(today, 30);
+      const plus30 = addDays(today, 20);
 
       document.getElementById('startDate').value = toYyyyMmDd(today);
       document.getElementById('endDate').value = toYyyyMmDd(plus30);
@@ -594,7 +594,7 @@
         if (!startDateValue) return;
 
         const startDate = parseDateLocal(startDateValue);
-        const endDate = addDays(startDate, 30);
+        const endDate = addDays(startDate, 20);
 
         document.getElementById('endDate').value = toYyyyMmDd(endDate);
       });
