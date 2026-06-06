@@ -33,7 +33,20 @@
       font-size: 26px;
       font-weight: 700;
     }
+.page-header {
+  margin: 0 0 18px;
+}
 
+.page-header h1 {
+  margin: 0;
+}
+
+.page-description {
+  margin-top: 6px;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.4;
+}
     .card {
       background: #fff;
       border-radius: 14px;
@@ -324,7 +337,15 @@
         font-size: 20px;
         margin-bottom: 14px;
       }
+.page-header {
+  display: block;
+  margin-bottom: 14px;
+}
 
+.page-description {
+  margin-top: 6px;
+  font-size: 13px;
+}
       .card {
         padding: 14px;
         border-radius: 12px;
@@ -448,7 +469,12 @@
 
 <body>
   <div class="container">
-    <h1>FBO Fee Lookup</h1>
+    <div class="page-header">
+  <h1>FBO Fee Lookup</h1>
+  <div class="page-description">
+    Signature / Atlantic FBO handling fees, minimum fuel uplift, and special event fees by date.
+  </div>
+</div>
 
     <div class="card">
       <div class="form-grid">
