@@ -583,7 +583,7 @@
 
     window.onload = function () {
       const today = new Date();
-      const plus30 = addDays(today, 18);
+      const plus20 = addDays(today, 20);
 
       document.getElementById('startDate').value = toYyyyMmDd(today);
       document.getElementById('endDate').value = toYyyyMmDd(plus30);
@@ -594,7 +594,7 @@
         if (!startDateValue) return;
 
         const startDate = parseDateLocal(startDateValue);
-        const endDate = addDays(startDate, 18);
+        const endDate = addDays(startDate, 20);
 
         document.getElementById('endDate').value = toYyyyMmDd(endDate);
       });
@@ -874,14 +874,14 @@
         format: 'a4'
       });
 
-      doc.setFontSize(16);
-      doc.text('FBO Fee Lookup Result', 14, 15);
+doc.setFontSize(15);
+doc.text('FBO Fee Lookup Result', 14, 12);
 
-      doc.setFontSize(10);
-      doc.text(`ICAO: ${input.icao}`, 14, 24);
-      doc.text(`FBO: ${input.provider}`, 55, 24);
-  doc.text(`Aircraft: ${input.model}`, 105, 24);
-      doc.text(`Period: ${input.startDate} ~ ${input.endDate}`, 150, 24);
+doc.setFontSize(9);
+doc.text(`ICAO: ${input.icao}`, 14, 19);
+doc.text(`FBO: ${input.provider}`, 55, 19);
+doc.text(`Aircraft: ${input.model}`, 105, 19);
+doc.text(`Period: ${input.startDate} ~ ${input.endDate}`, 150, 19);
      
 
   const head = [[
@@ -907,7 +907,7 @@
       doc.autoTable({
         head: head,
         body: body,
-        startY: 38,
+        startY: 24,
         theme: 'grid',
         styles: {
           fontSize: 9,
