@@ -6,6 +6,10 @@
 
   <title>FBO Fee Lookup</title>
 
+  <!-- PDF Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
   <style>
     * {
       box-sizing: border-box;
@@ -102,6 +106,28 @@
       color: #c5221f;
     }
 
+    .action-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .action-row button {
+      width: auto;
+      min-width: 120px;
+      height: 36px;
+      font-size: 13px;
+    }
+
+    .pdf-btn {
+      background: #188038;
+    }
+
+    .pdf-btn:hover {
+      background: #137333;
+    }
+
     .table-wrap {
       overflow-x: auto;
     }
@@ -155,6 +181,112 @@
       color: #7a4f00;
     }
 
+    /****************************************************
+     * MODAL
+     ****************************************************/
+
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.45);
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
+
+    .modal {
+      width: 100%;
+      max-width: 520px;
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.25);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid #e9edf2;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .modal-close {
+      width: 32px;
+      min-width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #eef2f7;
+      color: #333;
+      border: none;
+      font-size: 18px;
+      line-height: 32px;
+      padding: 0;
+    }
+
+    .modal-close:hover {
+      background: #e1e7ef;
+    }
+
+    .modal-body {
+      padding: 18px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .pdf-summary {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: auto;
+    }
+
+    .pdf-summary th,
+    .pdf-summary td {
+      border-bottom: 1px solid #edf1f5;
+      padding: 9px 6px;
+      font-size: 14px;
+      white-space: normal;
+    }
+
+    .pdf-summary th {
+      width: 140px;
+      background: #f8fafc;
+      text-align: left;
+    }
+
+    .modal-footer {
+      padding: 14px 18px 18px;
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      border-top: 1px solid #e9edf2;
+    }
+
+    .modal-footer button {
+      width: auto;
+      min-width: 120px;
+    }
+
+    .cancel-btn {
+      background: #eef2f7;
+      color: #333;
+      border: 1px solid #d5dce5;
+    }
+
+    .cancel-btn:hover {
+      background: #e1e7ef;
+    }
+
     @media (max-width: 900px) {
       .container {
         padding: 14px;
@@ -178,6 +310,18 @@
 
       table {
         min-width: 850px;
+      }
+
+      .action-row button {
+        width: 100%;
+      }
+
+      .modal-footer {
+        flex-direction: column;
+      }
+
+      .modal-footer button {
+        width: 100%;
       }
     }
   </style>
@@ -226,11 +370,15 @@
       </div>
 
       <div id="status" class="status"></div>
+
+      <div class="action-row">
+        <button class="pdf-btn" onclick="openPdfPopup()">PDF 추출</button>
+      </div>
     </div>
 
     <div class="card">
       <div class="table-wrap">
-        <table>
+        <table id="resultTable">
           <thead>
             <tr>
               <th>Date</th>
@@ -252,6 +400,52 @@
     </div>
   </div>
 
+  <!-- PDF POPUP -->
+  <div id="pdfModal" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>PDF 추출</h2>
+        <button class="modal-close" onclick="closePdfPopup()">×</button>
+      </div>
+
+      <div class="modal-body">
+        <p>현재 조회 결과를 PDF로 저장합니다.</p>
+
+        <table class="pdf-summary">
+          <tr>
+            <th>ICAO</th>
+            <td id="pdfIcao"></td>
+          </tr>
+          <tr>
+            <th>FBO</th>
+            <td id="pdfFbo"></td>
+          </tr>
+          <tr>
+            <th>Model</th>
+            <td id="pdfModel"></td>
+          </tr>
+          <tr>
+            <th>Start Date</th>
+            <td id="pdfStartDate"></td>
+          </tr>
+          <tr>
+            <th>End Date</th>
+            <td id="pdfEndDate"></td>
+          </tr>
+          <tr>
+            <th>Rows</th>
+            <td id="pdfRowCount"></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="modal-footer">
+        <button class="cancel-btn" onclick="closePdfPopup()">취소</button>
+        <button class="pdf-btn" onclick="downloadPdf()">PDF 다운로드</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     /****************************************************
      * CONFIG
@@ -262,29 +456,32 @@
     const CACHE_PREFIX = 'fboFeeLookupCache_v1_';
     const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
 
+    let currentRows = [];
+
 
     /****************************************************
      * INIT
      ****************************************************/
 
-window.onload = function () {
-  const today = new Date();
-  const plus30 = addDays(today, 30);
+    window.onload = function () {
+      const today = new Date();
+      const plus30 = addDays(today, 30);
 
-  document.getElementById('startDate').value = toYyyyMmDd(today);
-  document.getElementById('endDate').value = toYyyyMmDd(plus30);
+      document.getElementById('startDate').value = toYyyyMmDd(today);
+      document.getElementById('endDate').value = toYyyyMmDd(plus30);
 
-  document.getElementById('startDate').addEventListener('change', function () {
-    const startDateValue = this.value;
+      document.getElementById('startDate').addEventListener('change', function () {
+        const startDateValue = this.value;
 
-    if (!startDateValue) return;
+        if (!startDateValue) return;
 
-    const startDate = new Date(startDateValue);
-    const endDate = addDays(startDate, 30);
+        const startDate = new Date(startDateValue);
+        const endDate = addDays(startDate, 30);
 
-    document.getElementById('endDate').value = toYyyyMmDd(endDate);
-  });
-};
+        document.getElementById('endDate').value = toYyyyMmDd(endDate);
+      });
+    };
+
 
     /****************************************************
      * MAIN SEARCH
@@ -511,6 +708,8 @@ window.onload = function () {
       const tbody = document.getElementById('resultBody');
       tbody.innerHTML = '';
 
+      currentRows = [];
+
       if (!rows || rows.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="empty">결과가 없습니다.</td></tr>';
         return;
@@ -519,19 +718,26 @@ window.onload = function () {
       for (const r of rows) {
         const tr = document.createElement('tr');
 
-        const date = r.date || '';
-        const icao = r.icao || input.icao || '';
-        const fbo = r.fbo || r.provider || input.provider || '';
-        const model = r.model || input.model || '';
+        const rowData = {
+          date: r.date || '',
+          icao: r.icao || input.icao || '',
+          fbo: r.fbo || r.provider || input.provider || '',
+          model: r.model || input.model || '',
+          handlingFee: formatMoneyOrText(r.handlingFee),
+          minimumGallon: formatNumberOrText(r.minimumGallon),
+          specialEventFee: formatMoneyOrText(r.specialEventFee)
+        };
+
+        currentRows.push(rowData);
 
         tr.innerHTML = `
-          <td>${esc(date)}</td>
-          <td>${esc(icao)}</td>
-          <td>${esc(fbo)}</td>
-          <td>${esc(model)}</td>
-          <td class="num">${formatMoneyOrText(r.handlingFee)}</td>
-          <td class="num">${formatNumberOrText(r.minimumGallon)}</td>
-          <td class="num">${formatMoneyOrText(r.specialEventFee)}</td>
+          <td>${esc(rowData.date)}</td>
+          <td>${esc(rowData.icao)}</td>
+          <td>${esc(rowData.fbo)}</td>
+          <td>${esc(rowData.model)}</td>
+          <td class="num">${rowData.handlingFee}</td>
+          <td class="num">${rowData.minimumGallon}</td>
+          <td class="num">${rowData.specialEventFee}</td>
         `;
 
         tbody.appendChild(tr);
@@ -540,6 +746,8 @@ window.onload = function () {
 
     function renderError(message) {
       const tbody = document.getElementById('resultBody');
+
+      currentRows = [];
 
       tbody.innerHTML = `
         <tr>
@@ -557,6 +765,117 @@ window.onload = function () {
       }
 
       status.innerHTML = message || '';
+    }
+
+
+    /****************************************************
+     * PDF POPUP
+     ****************************************************/
+
+    function openPdfPopup() {
+      const input = getInputValues();
+
+      if (!currentRows || currentRows.length === 0) {
+        alert('PDF로 추출할 조회 결과가 없습니다.');
+        return;
+      }
+
+      document.getElementById('pdfIcao').textContent = input.icao || '-';
+      document.getElementById('pdfFbo').textContent = input.provider || '-';
+      document.getElementById('pdfModel').textContent = input.model || '-';
+      document.getElementById('pdfStartDate').textContent = input.startDate || '-';
+      document.getElementById('pdfEndDate').textContent = input.endDate || '-';
+      document.getElementById('pdfRowCount').textContent = currentRows.length + ' rows';
+
+      document.getElementById('pdfModal').style.display = 'flex';
+    }
+
+    function closePdfPopup() {
+      document.getElementById('pdfModal').style.display = 'none';
+    }
+
+    async function downloadPdf() {
+      if (!currentRows || currentRows.length === 0) {
+        alert('PDF로 추출할 조회 결과가 없습니다.');
+        return;
+      }
+
+      const input = getInputValues();
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const title = 'FBO Fee Lookup Result';
+
+      doc.setFontSize(16);
+      doc.text(title, 14, 15);
+
+      doc.setFontSize(10);
+      doc.text(`ICAO: ${input.icao}`, 14, 24);
+      doc.text(`FBO: ${input.provider}`, 55, 24);
+      doc.text(`Model: ${input.model}`, 105, 24);
+      doc.text(`Period: ${input.startDate} ~ ${input.endDate}`, 150, 24);
+      doc.text(`Generated: ${toYyyyMmDd(new Date())}`, 14, 31);
+
+      const head = [[
+        'Date',
+        'ICAO',
+        'FBO',
+        'Model',
+        'Handling Fee',
+        'Minimum Gallon',
+        'Special Event Fee'
+      ]];
+
+      const body = currentRows.map(r => [
+        r.date,
+        r.icao,
+        r.fbo,
+        r.model,
+        stripHtml(r.handlingFee),
+        stripHtml(r.minimumGallon),
+        stripHtml(r.specialEventFee)
+      ]);
+
+      doc.autoTable({
+        head: head,
+        body: body,
+        startY: 38,
+        theme: 'grid',
+        styles: {
+          fontSize: 9,
+          cellPadding: 2
+        },
+        headStyles: {
+          fillColor: [240, 243, 247],
+          textColor: [40, 40, 40]
+        },
+        columnStyles: {
+          4: { halign: 'right' },
+          5: { halign: 'right' },
+          6: { halign: 'right' }
+        },
+        margin: {
+          left: 14,
+          right: 14
+        }
+      });
+
+      const fileName =
+        'FBO_Fee_LOOKUP_' +
+        sanitizeFileName(input.provider) + '_' +
+        sanitizeFileName(input.icao) + '_' +
+        sanitizeFileName(input.model) + '_' +
+        input.startDate + '_' +
+        input.endDate +
+        '.pdf';
+
+      doc.save(fileName);
+      closePdfPopup();
     }
 
 
@@ -611,11 +930,13 @@ window.onload = function () {
 
       return n.toLocaleString();
     }
-function addDays(date, days) {
-  const d = new Date(date);
-  d.setDate(d.getDate() + days);
-  return d;
-}
+
+    function addDays(date, days) {
+      const d = new Date(date);
+      d.setDate(d.getDate() + days);
+      return d;
+    }
+
     function toYyyyMmDd(d) {
       const yyyy = d.getFullYear();
       const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -632,6 +953,26 @@ function addDays(date, days) {
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#039;');
     }
+
+    function stripHtml(v) {
+      const div = document.createElement('div');
+      div.innerHTML = v;
+      return div.textContent || div.innerText || '';
+    }
+
+    function sanitizeFileName(v) {
+      return String(v || '')
+        .replace(/[\\/:*?"<>|]/g, '_')
+        .replace(/\s+/g, '_');
+    }
+
+    window.onclick = function (event) {
+      const modal = document.getElementById('pdfModal');
+
+      if (event.target === modal) {
+        closePdfPopup();
+      }
+    };
   </script>
 </body>
 </html>
