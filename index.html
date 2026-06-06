@@ -129,7 +129,7 @@
 
     table {
       width: 100%;
-      min-width: 900px;
+      min-width: 650px;
       border-collapse: collapse;
       background: #fff;
     }
@@ -196,6 +196,10 @@
       .card {
         padding: 16px;
       }
+
+      table {
+        min-width: 600px;
+      }
     }
   </style>
 </head>
@@ -256,19 +260,14 @@
           <thead>
             <tr>
               <th>Date</th>
-              <th>ICAO</th>
-              <th>FBO</th>
-              <th>Model</th>
-              <th>Airport Code Used</th>
               <th class="num">Handling Fee</th>
               <th class="num">Minimum Gallon</th>
               <th class="num">Special Event Fee</th>
-              <th>Error</th>
             </tr>
           </thead>
           <tbody id="resultBody">
             <tr>
-              <td colspan="9" class="empty">조회 조건을 입력하세요.</td>
+              <td colspan="4" class="empty">조회 조건을 입력하세요.</td>
             </tr>
           </tbody>
         </table>
@@ -558,7 +557,7 @@
       tbody.innerHTML = '';
 
       if (!rows || rows.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="empty">결과가 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="empty">결과가 없습니다.</td></tr>';
         return;
       }
 
@@ -567,14 +566,9 @@
 
         tr.innerHTML = `
           <td>${esc(r.date)}</td>
-          <td>${esc(r.icao)}</td>
-          <td>${esc(r.provider)}</td>
-          <td>${esc(r.model)}</td>
-          <td>${esc(r.airportCodeUsed || '')}</td>
           <td class="num">${formatMoneyOrText(r.handlingFee)}</td>
           <td class="num">${formatNumberOrText(r.minimumGallon)}</td>
           <td class="num">${formatMoneyOrText(r.specialEventFee)}</td>
-          <td class="error-text">${esc(r.error || '')}</td>
         `;
 
         tbody.appendChild(tr);
@@ -586,7 +580,7 @@
 
       tbody.innerHTML = `
         <tr>
-          <td colspan="9" class="error-text">${esc(message)}</td>
+          <td colspan="4" class="error-text">${esc(message)}</td>
         </tr>
       `;
     }
@@ -607,8 +601,28 @@
      * FORMAT
      ****************************************************/
 
-    function formatMoneyOrText(v) {
+    function normalizeDisplayValue(v) {
       if (v === null || v === undefined || v === '') return '';
+
+      const text = String(v).trim();
+
+      if (
+        text.toLowerCase() === 'price unavailable' ||
+        text.toLowerCase() === 'unavailable' ||
+        text.toLowerCase() === 'null'
+      ) {
+        return 'N/A';
+      }
+
+      return v;
+    }
+
+    function formatMoneyOrText(v) {
+      v = normalizeDisplayValue(v);
+
+      if (v === null || v === undefined || v === '') return '';
+
+      if (v === 'N/A') return 'N/A';
 
       const n = Number(v);
 
@@ -620,7 +634,11 @@
     }
 
     function formatNumberOrText(v) {
+      v = normalizeDisplayValue(v);
+
       if (v === null || v === undefined || v === '') return '';
+
+      if (v === 'N/A') return 'N/A';
 
       const n = Number(v);
 
