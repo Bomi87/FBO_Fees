@@ -281,10 +281,10 @@
      * CONFIG
      ****************************************************/
 
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycby6yaQjFnScdWzBtMoZDtToL3sxP_xQZUUQp46yuOx7WL-nz5jBv8QoY8ILHafzFxOM/exec';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwqnZPiiV6tzJNyYXohhq8SwOSCEnnS8QkUmDfr1HL2vllDYoyDYkv-DLU93yYFVWYC/exec';
 
     const CACHE_PREFIX = 'fboFeeLookupCache_v1_';
-    const CACHE_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
+    const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
 
 
     /****************************************************
@@ -311,7 +311,6 @@
 
       if (!validateInput(input)) return;
 
-      const status = document.getElementById('status');
       const btn = document.getElementById('searchBtn');
 
       const cacheKey = buildCacheKey(input);
@@ -333,8 +332,7 @@
       renderRows([]);
 
       try {
-        const res = await fetch(url);
-        const json = await res.json();
+        const json = await jsonpRequest(url);
 
         if (!json.ok) {
           throw new Error(json.error || 'Unknown error');
@@ -352,6 +350,58 @@
       } finally {
         btn.disabled = false;
       }
+    }
+
+
+    /****************************************************
+     * JSONP REQUEST
+     ****************************************************/
+
+    function jsonpRequest(baseUrl) {
+      return new Promise((resolve, reject) => {
+        const callbackName =
+          'jsonpCallback_' +
+          Date.now() +
+          '_' +
+          Math.floor(Math.random() * 1000000);
+
+        const separator = baseUrl.includes('?') ? '&' : '?';
+        const url = baseUrl + separator + 'callback=' + encodeURIComponent(callbackName);
+
+        const script = document.createElement('script');
+
+        const timer = setTimeout(() => {
+          cleanup();
+          reject(new Error('Request timeout'));
+        }, 120000);
+
+        function cleanup() {
+          clearTimeout(timer);
+
+          try {
+            delete window[callbackName];
+          } catch (e) {
+            window[callbackName] = undefined;
+          }
+
+          if (script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+        }
+
+        window[callbackName] = function (data) {
+          cleanup();
+          resolve(data);
+        };
+
+        script.onerror = function () {
+          cleanup();
+          reject(new Error('Failed to load Apps Script response'));
+        };
+
+        script.src = url;
+        document.body.appendChild(script);
+      });
     }
 
 
