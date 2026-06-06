@@ -267,15 +267,24 @@
      * INIT
      ****************************************************/
 
-    window.onload = function () {
-      const today = new Date();
-      const plus30 = new Date(today);
-      plus30.setDate(today.getDate() + 30);
+window.onload = function () {
+  const today = new Date();
+  const plus30 = addDays(today, 30);
 
-      document.getElementById('startDate').value = toYyyyMmDd(today);
-      document.getElementById('endDate').value = toYyyyMmDd(plus30);
-    };
+  document.getElementById('startDate').value = toYyyyMmDd(today);
+  document.getElementById('endDate').value = toYyyyMmDd(plus30);
 
+  document.getElementById('startDate').addEventListener('change', function () {
+    const startDateValue = this.value;
+
+    if (!startDateValue) return;
+
+    const startDate = new Date(startDateValue);
+    const endDate = addDays(startDate, 30);
+
+    document.getElementById('endDate').value = toYyyyMmDd(endDate);
+  });
+};
 
     /****************************************************
      * MAIN SEARCH
@@ -602,7 +611,11 @@
 
       return n.toLocaleString();
     }
-
+function addDays(date, days) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
     function toYyyyMmDd(d) {
       const yyyy = d.getFullYear();
       const mm = String(d.getMonth() + 1).padStart(2, '0');
