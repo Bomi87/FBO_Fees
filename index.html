@@ -35,10 +35,31 @@
     }
 .page-header {
   margin: 0 0 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-left {
+  min-width: 0;
 }
 
 .page-header h1 {
   margin: 0;
+}
+
+.header-logos {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.header-logos img {
+  height: 34px;
+  width: auto;
+  object-fit: contain;
 }
 
 .page-description {
@@ -232,10 +253,20 @@
         margin-bottom: 14px;
       }
 .page-header {
-  display: block;
+  display: flex;
   margin-bottom: 14px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
+.header-logos {
+  gap: 6px;
+}
+
+.header-logos img {
+  height: 22px;
+}
 .page-description {
   margin-top: 6px;
   font-size: 13px;
@@ -369,10 +400,17 @@ input[type="date"] {
 
 <body>
   <div class="container">
-    <div class="page-header">
-  <h1>FBO Fee Lookup</h1>
-  <div class="page-description">
-    Signature / Atlantic FBO handling fees, minimum fuel uplift, and special event fees by date.
+<div class="page-header">
+  <div class="header-left">
+    <h1>FBO Fee Lookup</h1>
+    <div class="page-description">
+      Signature / Atlantic FBO handling fees, minimum fuel uplift, and special event fees by date.
+    </div>
+  </div>
+
+  <div class="header-logos">
+    <img src="SIGNATURE.jpg" alt="Signature" />
+    <img src="ATLANTIC.jpg" alt="Atlantic" />
   </div>
 </div>
 
