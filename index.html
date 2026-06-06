@@ -505,7 +505,7 @@
               <th>Date</th>
               <th>ICAO</th>
               <th>FBO</th>
-              <th>Model</th>
+           <th>Aircraft</th>
               <th class="num">Handling Fee</th>
               <th class="num">Minimum Gallon</th>
               <th class="num">Special Event Fee</th>
@@ -542,8 +542,8 @@
             <td id="pdfFbo"></td>
           </tr>
           <tr>
-            <th>Model</th>
-            <td id="pdfModel"></td>
+      <th>Aircraft</th>
+<td id="pdfModel"></td>
           </tr>
           <tr>
             <th>Start Date</th>
@@ -880,19 +880,19 @@
       doc.setFontSize(10);
       doc.text(`ICAO: ${input.icao}`, 14, 24);
       doc.text(`FBO: ${input.provider}`, 55, 24);
-      doc.text(`Model: ${input.model}`, 105, 24);
+  doc.text(`Aircraft: ${input.model}`, 105, 24);
       doc.text(`Period: ${input.startDate} ~ ${input.endDate}`, 150, 24);
      
 
-      const head = [[
-        'Date',
-        'ICAO',
-        'FBO',
-        'Model',
-        'Handling Fee',
-        'Minimum Gallon',
-        'Special Event Fee'
-      ]];
+  const head = [[
+  'Date',
+  'ICAO',
+  'FBO',
+  'Aircraft',
+  'Handling Fee',
+  'Minimum Gallon',
+  'Special Event Fee'
+]];
 
       const body = currentRows.map(r => [
         r.date,
