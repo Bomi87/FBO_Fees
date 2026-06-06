@@ -303,7 +303,7 @@ window.onload = function () {
       if (cached) {
         renderRows(cached.rows || [], input);
         setStatus(
-          `${cached.count || 0}건 조회 완료 <span class="badge cache-badge">12시간 캐시 사용</span>`,
+          `${cached.count || 0}건 조회 완료 <span class="badge cache-badge">Cached</span>`,
           'ok'
         );
         return;
