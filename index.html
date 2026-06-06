@@ -163,9 +163,10 @@
     td {
       padding: 11px 10px;
       border-bottom: 1px solid #e9edf2;
-      text-align: left;
+      text-align: center;
       font-size: 14px;
       white-space: nowrap;
+      vertical-align: middle;
     }
 
     th {
@@ -176,15 +177,17 @@
 
     td.num,
     th.num {
-      text-align: right;
+      text-align: center;
     }
 
     .empty {
       color: #777;
+      text-align: left;
     }
 
     .error-text {
       color: #c5221f;
+      text-align: left;
     }
 
     .badge {
@@ -276,6 +279,7 @@
       padding: 9px 6px;
       font-size: 14px;
       white-space: normal;
+      text-align: left;
     }
 
     .pdf-summary th {
@@ -318,6 +322,7 @@
 
       h1 {
         font-size: 20px;
+        margin-bottom: 14px;
       }
 
       .card {
@@ -326,32 +331,32 @@
       }
 
       .form-grid {
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 6px;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 8px;
       }
 
       .model-field {
-        grid-column: 1 / 2;
+        grid-column: 1 / 3;
       }
 
       .provider-field {
-        grid-column: 2 / 3;
+        grid-column: 3 / 5;
       }
 
       .icao-field {
-        grid-column: 3 / 4;
+        grid-column: 5 / 7;
       }
 
       .start-field {
-        grid-column: 1 / 2;
+        grid-column: 1 / 4;
       }
 
       .end-field {
-        grid-column: 2 / 4;
+        grid-column: 4 / 7;
       }
 
       .button-field {
-        grid-column: 1 / 4;
+        grid-column: 1 / 7;
       }
 
       label {
@@ -378,18 +383,29 @@
         width: 100%;
       }
 
+      .action-row {
+        margin-top: 10px;
+      }
+
       .action-row button {
         width: 100%;
+        height: 38px;
       }
 
       table {
-        min-width: 720px;
+        min-width: 760px;
       }
 
       th,
       td {
         font-size: 13px;
         padding: 9px 8px;
+        text-align: center;
+      }
+
+      .empty,
+      .error-text {
+        text-align: left;
       }
 
       .modal-footer {
@@ -414,7 +430,7 @@
       }
 
       .form-grid {
-        gap: 4px;
+        gap: 6px;
       }
     }
   </style>
@@ -546,10 +562,7 @@
      * CONFIG
      ****************************************************/
 
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzwBHSWBnFH8ZyeMJBTuxY1gDs2tpCDvEvCMQftRxFCbOAVqfe110SgEfc5O14g54i9/exec';
-
-    const CACHE_PREFIX = 'fboFeeLookupCache_v1_';
-    const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwVrcAFCdDSG6iijUecJFkiHG-KtVvhnr-oRw46dznfiMfH2l4Yi5hvFZ1dLy4cAnTr/exec';
 
     let currentRows = [];
 
@@ -588,19 +601,6 @@
       if (!validateInput(input)) return;
 
       const btn = document.getElementById('searchBtn');
-
-      const cacheKey = buildCacheKey(input);
-      const cached = getCachedResult(cacheKey);
-
-      if (cached) {
-        renderRows(cached.rows || [], input);
-        setStatus(
-          `${cached.count || 0}건 조회 완료 <span class="badge cache-badge">Cached</span>`,
-          'ok'
-        );
-        return;
-      }
-
       const url = buildRequestUrl(input);
 
       btn.disabled = true;
@@ -614,10 +614,19 @@
           throw new Error(json.error || 'Unknown error');
         }
 
-        setCachedResult(cacheKey, json);
-
         renderRows(json.rows || [], input);
-        setStatus(`${json.count || 0}건 조회 완료 <span class="badge">Live</span>`, 'ok');
+
+        if (json.cached) {
+          setStatus(
+            `${json.count || 0}건 조회 완료 <span class="badge cache-badge">Cached</span>`,
+            'ok'
+          );
+        } else {
+          setStatus(
+            `${json.count || 0}건 조회 완료 <span class="badge">Live</span>`,
+            'ok'
+          );
+        }
 
       } catch (err) {
         setStatus(err.message, 'error');
@@ -738,60 +747,6 @@
         '&startDate=' + encodeURIComponent(input.startDate) +
         '&endDate=' + encodeURIComponent(input.endDate)
       );
-    }
-
-
-    /****************************************************
-     * CACHE
-     ****************************************************/
-
-    function buildCacheKey(input) {
-      return (
-        CACHE_PREFIX +
-        input.provider + '_' +
-        input.model + '_' +
-        input.icao + '_' +
-        input.startDate + '_' +
-        input.endDate
-      );
-    }
-
-    function getCachedResult(cacheKey) {
-      try {
-        const raw = localStorage.getItem(cacheKey);
-        if (!raw) return null;
-
-        const obj = JSON.parse(raw);
-
-        if (!obj.savedAt || !obj.data) {
-          localStorage.removeItem(cacheKey);
-          return null;
-        }
-
-        const age = Date.now() - obj.savedAt;
-
-        if (age > CACHE_TTL_MS) {
-          localStorage.removeItem(cacheKey);
-          return null;
-        }
-
-        return obj.data;
-
-      } catch (err) {
-        localStorage.removeItem(cacheKey);
-        return null;
-      }
-    }
-
-    function setCachedResult(cacheKey, data) {
-      try {
-        localStorage.setItem(cacheKey, JSON.stringify({
-          savedAt: Date.now(),
-          data: data
-        }));
-      } catch (err) {
-        console.warn('Cache save failed:', err);
-      }
     }
 
 
@@ -946,16 +901,14 @@
         theme: 'grid',
         styles: {
           fontSize: 9,
-          cellPadding: 2
+          cellPadding: 2,
+          halign: 'center',
+          valign: 'middle'
         },
         headStyles: {
           fillColor: [240, 243, 247],
-          textColor: [40, 40, 40]
-        },
-        columnStyles: {
-          4: { halign: 'right' },
-          5: { halign: 'right' },
-          6: { halign: 'right' }
+          textColor: [40, 40, 40],
+          halign: 'center'
         },
         margin: {
           left: 14,
