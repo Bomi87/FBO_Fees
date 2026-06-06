@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>FBO Fee Lookup</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, "Noto Sans KR", sans-serif;
+      background: #f4f6f8;
+      color: #222;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    h1 {
+      margin: 0 0 18px;
+      font-size: 26px;
+      font-weight: 700;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 18px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr 1fr auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    select,
+    input,
+    button {
+      width: 100%;
+      height: 42px;
+      border-radius: 9px;
+      border: 1px solid #cfd6df;
+      padding: 0 10px;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    input {
+      text-transform: uppercase;
+    }
+
+    button {
+      min-width: 110px;
+      border: none;
+      background: #1a73e8;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #155fc0;
+    }
+
+    button:disabled {
+      background: #9aa0a6;
+      cursor: not-allowed;
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 14px;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    .status.ok {
+      color: #137333;
+    }
+
+    .status.error {
+      color: #c5221f;
+    }
+
+    .small-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .small-actions button {
+      width: auto;
+      min-width: 120px;
+      height: 34px;
+      font-size: 13px;
+      background: #eef2f7;
+      color: #333;
+      border: 1px solid #d5dce5;
+    }
+
+    .small-actions button:hover {
+      background: #e1e7ef;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      min-width: 900px;
+      border-collapse: collapse;
+      background: #fff;
+    }
+
+    th,
+    td {
+      padding: 11px 10px;
+      border-bottom: 1px solid #e9edf2;
+      text-align: left;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    th {
+      background: #f0f3f7;
+      color: #333;
+      font-weight: 700;
+    }
+
+    td.num,
+    th.num {
+      text-align: right;
+    }
+
+    .empty {
+      color: #777;
+    }
+
+    .error-text {
+      color: #c5221f;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: #eef2f7;
+      font-size: 12px;
+      color: #444;
+    }
+
+    .cache-badge {
+      background: #fff4ce;
+      color: #7a4f00;
+    }
+
+    @media (max-width: 900px) {
+      .container {
+        padding: 14px;
+      }
+
+      h1 {
+        font-size: 22px;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      .card {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>FBO Fee Lookup</h1>
+
+    <div class="card">
+      <div class="form-grid">
+        <div>
+          <label for="model">기종</label>
+          <select id="model">
+            <option value="ACJ">ACJ</option>
+            <option value="G650">G650</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="provider">FBO</label>
+          <select id="provider">
+            <option value="SIGNATURE">SIGNATURE</option>
+            <option value="ATLANTIC">ATLANTIC</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="icao">공항코드</label>
+          <input id="icao" type="text" maxlength="4" placeholder="KSJC" />
+        </div>
+
+        <div>
+          <label for="startDate">시작일</label>
+          <input id="startDate" type="date" />
+        </div>
+
+        <div>
+          <label for="endDate">종료일</label>
+          <input id="endDate" type="date" />
+        </div>
+
+        <div>
+          <button id="searchBtn" onclick="searchFees()">조회</button>
+        </div>
+      </div>
+
+      <div id="status" class="status"></div>
+
+      <div class="small-actions">
+        <button onclick="clearCurrentCache()">현재 조건 캐시 삭제</button>
+        <button onclick="clearAllCache()">전체 캐시 삭제</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>ICAO</th>
+              <th>FBO</th>
+              <th>Model</th>
+              <th>Airport Code Used</th>
+              <th class="num">Handling Fee</th>
+              <th class="num">Minimum Gallon</th>
+              <th class="num">Special Event Fee</th>
+              <th>Error</th>
+            </tr>
+          </thead>
+          <tbody id="resultBody">
+            <tr>
+              <td colspan="9" class="empty">조회 조건을 입력하세요.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /****************************************************
+     * CONFIG
+     ****************************************************/
+
+    const GAS_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+
+    const CACHE_PREFIX = 'fboFeeLookupCache_v1_';
+    const CACHE_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
+
+
+    /****************************************************
+     * INIT
+     ****************************************************/
+
+    window.onload = function () {
+      const today = new Date();
+      const plus2 = new Date(today);
+      plus2.setDate(today.getDate() + 2);
+
+      document.getElementById('startDate').value = toYyyyMmDd(plus2);
+      document.getElementById('endDate').value = toYyyyMmDd(plus2);
+      document.getElementById('icao').value = 'KSJC';
+    };
+
+
+    /****************************************************
+     * MAIN SEARCH
+     ****************************************************/
+
+    async function searchFees() {
+      const input = getInputValues();
+
+      if (!validateInput(input)) return;
+
+      const status = document.getElementById('status');
+      const btn = document.getElementById('searchBtn');
+
+      const cacheKey = buildCacheKey(input);
+      const cached = getCachedResult(cacheKey);
+
+      if (cached) {
+        renderRows(cached.rows || []);
+        setStatus(
+          `${cached.count || 0}건 조회 완료 <span class="badge cache-badge">12시간 캐시 사용</span>`,
+          'ok'
+        );
+        return;
+      }
+
+      const url = buildRequestUrl(input);
+
+      btn.disabled = true;
+      setStatus('조회 중입니다...', '');
+      renderRows([]);
+
+      try {
+        const res = await fetch(url);
+        const json = await res.json();
+
+        if (!json.ok) {
+          throw new Error(json.error || 'Unknown error');
+        }
+
+        setCachedResult(cacheKey, json);
+
+        renderRows(json.rows || []);
+        setStatus(`${json.count || 0}건 조회 완료 <span class="badge">Live</span>`, 'ok');
+
+      } catch (err) {
+        setStatus(err.message, 'error');
+        renderError(err.message);
+
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+
+    /****************************************************
+     * INPUT
+     ****************************************************/
+
+    function getInputValues() {
+      return {
+        model: document.getElementById('model').value.trim().toUpperCase(),
+        provider: document.getElementById('provider').value.trim().toUpperCase(),
+        icao: document.getElementById('icao').value.trim().toUpperCase(),
+        startDate: document.getElementById('startDate').value,
+        endDate: document.getElementById('endDate').value
+      };
+    }
+
+    function validateInput(input) {
+      if (!GAS_URL || GAS_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
+        alert('Apps Script Web App URL을 GAS_URL에 입력하세요.');
+        return false;
+      }
+
+      if (!input.model) {
+        alert('기종을 선택하세요.');
+        return false;
+      }
+
+      if (!input.provider) {
+        alert('FBO를 선택하세요.');
+        return false;
+      }
+
+      if (!input.icao || input.icao.length !== 4) {
+        alert('4 Letter ICAO Code를 입력하세요. 예: KSJC');
+        return false;
+      }
+
+      if (!input.startDate || !input.endDate) {
+        alert('조회기간을 입력하세요.');
+        return false;
+      }
+
+      if (input.startDate > input.endDate) {
+        alert('시작일은 종료일보다 늦을 수 없습니다.');
+        return false;
+      }
+
+      return true;
+    }
+
+    function buildRequestUrl(input) {
+      return (
+        GAS_URL +
+        '?provider=' + encodeURIComponent(input.provider) +
+        '&model=' + encodeURIComponent(input.model) +
+        '&icao=' + encodeURIComponent(input.icao) +
+        '&startDate=' + encodeURIComponent(input.startDate) +
+        '&endDate=' + encodeURIComponent(input.endDate)
+      );
+    }
+
+
+    /****************************************************
+     * CACHE
+     ****************************************************/
+
+    function buildCacheKey(input) {
+      return (
+        CACHE_PREFIX +
+        input.provider + '_' +
+        input.model + '_' +
+        input.icao + '_' +
+        input.startDate + '_' +
+        input.endDate
+      );
+    }
+
+    function getCachedResult(cacheKey) {
+      try {
+        const raw = localStorage.getItem(cacheKey);
+        if (!raw) return null;
+
+        const obj = JSON.parse(raw);
+
+        if (!obj.savedAt || !obj.data) {
+          localStorage.removeItem(cacheKey);
+          return null;
+        }
+
+        const age = Date.now() - obj.savedAt;
+
+        if (age > CACHE_TTL_MS) {
+          localStorage.removeItem(cacheKey);
+          return null;
+        }
+
+        return obj.data;
+
+      } catch (err) {
+        localStorage.removeItem(cacheKey);
+        return null;
+      }
+    }
+
+    function setCachedResult(cacheKey, data) {
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({
+          savedAt: Date.now(),
+          data: data
+        }));
+      } catch (err) {
+        console.warn('Cache save failed:', err);
+      }
+    }
+
+    function clearCurrentCache() {
+      const input = getInputValues();
+
+      if (!input.provider || !input.model || !input.icao || !input.startDate || !input.endDate) {
+        alert('현재 조건이 완성되지 않았습니다.');
+        return;
+      }
+
+      const cacheKey = buildCacheKey(input);
+      localStorage.removeItem(cacheKey);
+
+      setStatus('현재 조건 캐시를 삭제했습니다.', 'ok');
+    }
+
+    function clearAllCache() {
+      const keysToDelete = [];
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+
+        if (key && key.startsWith(CACHE_PREFIX)) {
+          keysToDelete.push(key);
+        }
+      }
+
+      keysToDelete.forEach(key => localStorage.removeItem(key));
+
+      setStatus(`전체 캐시 ${keysToDelete.length}건을 삭제했습니다.`, 'ok');
+    }
+
+
+    /****************************************************
+     * RENDER
+     ****************************************************/
+
+    function renderRows(rows) {
+      const tbody = document.getElementById('resultBody');
+      tbody.innerHTML = '';
+
+      if (!rows || rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="empty">결과가 없습니다.</td></tr>';
+        return;
+      }
+
+      for (const r of rows) {
+        const tr = document.createElement('tr');
+
+        tr.innerHTML = `
+          <td>${esc(r.date)}</td>
+          <td>${esc(r.icao)}</td>
+          <td>${esc(r.provider)}</td>
+          <td>${esc(r.model)}</td>
+          <td>${esc(r.airportCodeUsed || '')}</td>
+          <td class="num">${formatMoneyOrText(r.handlingFee)}</td>
+          <td class="num">${formatNumberOrText(r.minimumGallon)}</td>
+          <td class="num">${formatMoneyOrText(r.specialEventFee)}</td>
+          <td class="error-text">${esc(r.error || '')}</td>
+        `;
+
+        tbody.appendChild(tr);
+      }
+    }
+
+    function renderError(message) {
+      const tbody = document.getElementById('resultBody');
+
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="9" class="error-text">${esc(message)}</td>
+        </tr>
+      `;
+    }
+
+    function setStatus(message, type) {
+      const status = document.getElementById('status');
+      status.className = 'status';
+
+      if (type) {
+        status.classList.add(type);
+      }
+
+      status.innerHTML = message || '';
+    }
+
+
+    /****************************************************
+     * FORMAT
+     ****************************************************/
+
+    function formatMoneyOrText(v) {
+      if (v === null || v === undefined || v === '') return '';
+
+      const n = Number(v);
+
+      if (isNaN(n)) {
+        return esc(v);
+      }
+
+      return '$' + n.toLocaleString();
+    }
+
+    function formatNumberOrText(v) {
+      if (v === null || v === undefined || v === '') return '';
+
+      const n = Number(v);
+
+      if (isNaN(n)) {
+        return esc(v);
+      }
+
+      return n.toLocaleString();
+    }
+
+    function toYyyyMmDd(d) {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function esc(v) {
+      return String(v === null || v === undefined ? '' : v)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+  </script>
+</body>
+</html>
