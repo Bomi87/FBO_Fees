@@ -102,34 +102,13 @@
       color: #c5221f;
     }
 
-    .small-actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 12px;
-      flex-wrap: wrap;
-    }
-
-    .small-actions button {
-      width: auto;
-      min-width: 120px;
-      height: 34px;
-      font-size: 13px;
-      background: #eef2f7;
-      color: #333;
-      border: 1px solid #d5dce5;
-    }
-
-    .small-actions button:hover {
-      background: #e1e7ef;
-    }
-
     .table-wrap {
       overflow-x: auto;
     }
 
     table {
       width: 100%;
-      min-width: 650px;
+      min-width: 850px;
       border-collapse: collapse;
       background: #fff;
     }
@@ -198,7 +177,7 @@
       }
 
       table {
-        min-width: 600px;
+        min-width: 850px;
       }
     }
   </style>
@@ -247,8 +226,6 @@
       </div>
 
       <div id="status" class="status"></div>
-
-
     </div>
 
     <div class="card">
@@ -257,6 +234,9 @@
           <thead>
             <tr>
               <th>Date</th>
+              <th>ICAO</th>
+              <th>FBO</th>
+              <th>Model</th>
               <th class="num">Handling Fee</th>
               <th class="num">Minimum Gallon</th>
               <th class="num">Special Event Fee</th>
@@ -264,7 +244,7 @@
           </thead>
           <tbody id="resultBody">
             <tr>
-              <td colspan="4" class="empty">조회 조건을 입력하세요.</td>
+              <td colspan="7" class="empty">조회 조건을 입력하세요.</td>
             </tr>
           </tbody>
         </table>
@@ -289,12 +269,11 @@
 
     window.onload = function () {
       const today = new Date();
-      const plus2 = new Date(today);
-      plus2.setDate(today.getDate() + 2);
+      const plus30 = new Date(today);
+      plus30.setDate(today.getDate() + 30);
 
-      document.getElementById('startDate').value = toYyyyMmDd(plus2);
-      document.getElementById('endDate').value = toYyyyMmDd(plus2);
-  
+      document.getElementById('startDate').value = toYyyyMmDd(today);
+      document.getElementById('endDate').value = toYyyyMmDd(plus30);
     };
 
 
@@ -313,7 +292,7 @@
       const cached = getCachedResult(cacheKey);
 
       if (cached) {
-        renderRows(cached.rows || []);
+        renderRows(cached.rows || [], input);
         setStatus(
           `${cached.count || 0}건 조회 완료 <span class="badge cache-badge">12시간 캐시 사용</span>`,
           'ok'
@@ -325,7 +304,7 @@
 
       btn.disabled = true;
       setStatus('조회 중입니다...', '');
-      renderRows([]);
+      renderRows([], input);
 
       try {
         const json = await jsonpRequest(url);
@@ -336,7 +315,7 @@
 
         setCachedResult(cacheKey, json);
 
-        renderRows(json.rows || []);
+        renderRows(json.rows || [], input);
         setStatus(`${json.count || 0}건 조회 완료 <span class="badge">Live</span>`, 'ok');
 
       } catch (err) {
@@ -515,25 +494,32 @@
     }
 
 
-
     /****************************************************
      * RENDER
      ****************************************************/
 
-    function renderRows(rows) {
+    function renderRows(rows, input) {
       const tbody = document.getElementById('resultBody');
       tbody.innerHTML = '';
 
       if (!rows || rows.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="empty">결과가 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="empty">결과가 없습니다.</td></tr>';
         return;
       }
 
       for (const r of rows) {
         const tr = document.createElement('tr');
 
+        const date = r.date || '';
+        const icao = r.icao || input.icao || '';
+        const fbo = r.fbo || r.provider || input.provider || '';
+        const model = r.model || input.model || '';
+
         tr.innerHTML = `
-          <td>${esc(r.date)}</td>
+          <td>${esc(date)}</td>
+          <td>${esc(icao)}</td>
+          <td>${esc(fbo)}</td>
+          <td>${esc(model)}</td>
           <td class="num">${formatMoneyOrText(r.handlingFee)}</td>
           <td class="num">${formatNumberOrText(r.minimumGallon)}</td>
           <td class="num">${formatMoneyOrText(r.specialEventFee)}</td>
@@ -548,7 +534,7 @@
 
       tbody.innerHTML = `
         <tr>
-          <td colspan="4" class="error-text">${esc(message)}</td>
+          <td colspan="7" class="error-text">${esc(message)}</td>
         </tr>
       `;
     }
