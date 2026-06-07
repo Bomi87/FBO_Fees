@@ -399,7 +399,23 @@ input[type="date"] {
 </head>
 
 <body>
-  <div class="container">
+  <div id="authScreen" style="
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    background:#f4f7fb;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR',Arial,sans-serif;
+    color:#1f2937;
+    font-size:15px;
+    font-weight:700;
+  ">
+    승인 확인 중...
+  </div>
+
+  <div id="appRoot" style="display:none;">
+    <div class="container">
 <div class="page-header">
   <div class="header-left">
     <h1>FBO Fee Lookup</h1>
@@ -483,9 +499,8 @@ input[type="date"] {
         </table>
       </div>
     </div>
+    </div>
   </div>
-
-  
 
   <script>
     /****************************************************
@@ -501,25 +516,57 @@ input[type="date"] {
      * INIT
      ****************************************************/
 
-    window.onload = function () {
-      const today = new Date();
-      const plus20 = addDays(today, 20);
+let FBO_FEE_APP_STARTED = false;
 
-      document.getElementById('startDate').value = toYyyyMmDd(today);
-      document.getElementById('endDate').value = toYyyyMmDd(plus20);
+function showAuthorizedApp() {
+  const authScreen = document.getElementById("authScreen");
+  const appRoot = document.getElementById("appRoot");
 
-      document.getElementById('startDate').addEventListener('change', function () {
-        const startDateValue = this.value;
+  if (authScreen) authScreen.style.display = "none";
+  if (appRoot) appRoot.style.display = "block";
+}
 
-        if (!startDateValue) return;
+function initFboFeeApp() {
+  const today = new Date();
+  const plus20 = addDays(today, 20);
 
-        const startDate = parseDateLocal(startDateValue);
-        const endDate = addDays(startDate, 20);
+  document.getElementById('startDate').value = toYyyyMmDd(today);
+  document.getElementById('endDate').value = toYyyyMmDd(plus20);
 
-        document.getElementById('endDate').value = toYyyyMmDd(endDate);
-      });
-    };
+  document.getElementById('startDate').addEventListener('change', function () {
+    const startDateValue = this.value;
 
+    if (!startDateValue) return;
+
+    const startDate = parseDateLocal(startDateValue);
+    const endDate = addDays(startDate, 20);
+
+    document.getElementById('endDate').value = toYyyyMmDd(endDate);
+  });
+}
+
+function startFboFeeAppAfterAuth() {
+  if (FBO_FEE_APP_STARTED) return;
+
+  FBO_FEE_APP_STARTED = true;
+  showAuthorizedApp();
+  initFboFeeApp();
+}
+
+(function waitForPortalAuth() {
+  if (sessionStorage.getItem("portalApproved") === "true") {
+    startFboFeeAppAfterAuth();
+    return;
+  }
+
+  if (window.CURRENT_PORTAL_USER) {
+    sessionStorage.setItem("portalApproved", "true");
+    startFboFeeAppAfterAuth();
+    return;
+  }
+
+  setTimeout(waitForPortalAuth, 200);
+})();
 
     /****************************************************
      * MAIN SEARCH
@@ -929,5 +976,8 @@ doc.save(fileName);
 
   
   </script>
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://bomi87.github.io/SK-Aviation-portal/common-auth.js"></script>
 </body>
 </html>
