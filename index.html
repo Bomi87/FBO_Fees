@@ -545,7 +545,7 @@ function initFboFeeApp() {
 
     // 종료일 선택 가능 범위 제한: 시작일 ~ 시작일+31
     endDateInput.min = startDateValue;
-    endDateInput.max = toYyyyMmDd(addDays(startDate, MAX_RANGE_DAYS));
+endDateInput.max = toYyyyMmDd(addDays(startDate, MAX_RANGE_DAYS - 1));
   });
 
   document.getElementById('endDate').addEventListener('change', function () {
@@ -555,7 +555,7 @@ function initFboFeeApp() {
     if (!startDateValue || !endDateValue) return;
 
     const startDate = parseDateLocal(startDateValue);
-    const maxEndDate = addDays(startDate, MAX_RANGE_DAYS);
+const maxEndDate = addDays(startDate, MAX_RANGE_DAYS - 1);
     const maxEndDateValue = toYyyyMmDd(maxEndDate);
 
     if (endDateValue > maxEndDateValue) {
@@ -572,7 +572,7 @@ function initFboFeeApp() {
   // 최초 로딩 시에도 종료일 범위 설정
   const startDate = parseDateLocal(document.getElementById('startDate').value);
   document.getElementById('endDate').min = document.getElementById('startDate').value;
-  document.getElementById('endDate').max = toYyyyMmDd(addDays(startDate, MAX_RANGE_DAYS));
+ document.getElementById('endDate').max = toYyyyMmDd(addDays(startDate, MAX_RANGE_DAYS - 1));
 }
     
 function startFboFeeAppAfterAuth() {
@@ -742,7 +742,7 @@ function startFboFeeAppAfterAuth() {
         return false;
       }
       const startDate = parseDateLocal(input.startDate);
-const maxEndDate = toYyyyMmDd(addDays(startDate, MAX_RANGE_DAYS));
+const maxEndDate = toYyyyMmDd(addDays(startDate, MAX_RANGE_DAYS - 1));
 
 if (input.endDate > maxEndDate) {
   alert('조회 종료일은 시작일로부터 최대 31일까지만 가능합니다.');
