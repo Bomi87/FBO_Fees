@@ -507,7 +507,7 @@ input[type="date"] {
      * CONFIG
      ****************************************************/
 
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwJ7Palfz4_s9wuwP3W8cdiwYB7u-hpPprHeaQ2Q4IoWqvb3U7CATEma-AAXpwBOhyD/exec';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzFhlVBtwuaT_qbSkasXw4Y3a8LUF6jsWgVTzn4K-ICXvh5BX9xp_UYYzPizMzqbTMj/exec';
 
     let currentRows = [];
 
@@ -931,7 +931,9 @@ doc.save(fileName);
       if (
         text.toLowerCase() === 'price unavailable' ||
         text.toLowerCase() === 'unavailable' ||
-        text.toLowerCase() === 'null'
+        text.toLowerCase() === 'null' ||
+        text.toLowerCase() === 'undefined' ||
+        text.toLowerCase() === 'not available'
       ) {
         return 'N/A';
       }
