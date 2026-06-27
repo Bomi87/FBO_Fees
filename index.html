@@ -584,13 +584,7 @@ function startFboFeeAppAfterAuth() {
 }
 
 (function waitForPortalAuth() {
-  if (sessionStorage.getItem("portalApproved") === "true") {
-    startFboFeeAppAfterAuth();
-    return;
-  }
-
   if (window.CURRENT_PORTAL_USER) {
-    sessionStorage.setItem("portalApproved", "true");
     startFboFeeAppAfterAuth();
     return;
   }
